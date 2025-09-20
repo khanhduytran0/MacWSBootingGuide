@@ -63,7 +63,11 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
             *swapEnd = 0x52808d83; // mov    w3, #0x46c
         });
     } else if(!strncmp(info.dli_fname, libxpcPath, strlen(libxpcPath))) {
-        xpc_add_bundle("/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc", 2);
+        // register MTLCompilerService.xpc
+        xpc_object_t dict = (xpc_object_t)xpc_dictionary_create(NULL, NULL, 0);
+        xpc_dictionary_set_uint64(dict, "/System/Library/Frameworks/Metal.framework/Metal", 2);
+        void(*_xpc_bootstrap_services)(xpc_object_t) = MSFindSymbol((MSImageRef)header, "__xpc_bootstrap_services");
+        _xpc_bootstrap_services(dict);
     }
 }
 

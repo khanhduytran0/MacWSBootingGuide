@@ -4,8 +4,6 @@
 <dict>
 	<key>EnvironmentVariables</key>
 	<dict>
-		<key>CA_DISABLE_SWAP_ICC</key>
-		<string>1</string>
 		<key>CA_VSYNC_OFF</key>
 		<string>1</string>
 	</dict>

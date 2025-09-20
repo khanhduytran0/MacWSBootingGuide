@@ -20,7 +20,7 @@ TODO: make a script
 - Symlink `rootfs/var/folders/zz` -> `/var/folders/zz`
 - mkdir `rootfs/Users/root`
 - Copy `/etc` from macOS installation to `rootfs/etc` (optional?)
-- [Bind mount](https://github.com/khanhduytran0/mount-bindfs-dopamine) `rootfs/var/jb` -> `/var/jb`
+- Bind mount `rootfs/var/jb` -> `/var/jb`. Use [my fork of mount-bindfs-dopamine](https://github.com/khanhduytran0/mount-bindfs-dopamine) (available in Nathan's repo)
 - Patch `dyld`, `launchservicesd` and `WindowServer` as described below.
 - Modify `cpusubtype` in `Installer Progress` and `WindowServer`
 - For every executable you wanna run, sign and merge with `entitlements.plist` in this repo.
