@@ -4,8 +4,8 @@ include $(THEOS)/makefiles/common.mk
 LIBRARY_NAME = libmachook
 
 libmachook_FILES = jit.m objc_hooks.c mac_hooks.m  os_variant_hooks.x \
-  ControlCenter_hooks.x Metal_hooks.x QuartzCore_hooks.x
-#libmachook_CFLAGS = -D_FORCE_M1_DRIVER -fobjc-arc
+  ControlCenter_hooks.x Metal_hooks.x QuartzCore_hooks.x metal_hooks_for_m1.x
+libmachook_CFLAGS = -DFORCE_M1_DRIVER # -fobjc-arc
 libmachook_FRAMEWORKS = IOKit IOSurface Metal
 libmachook_LDFLAGS = -undefined dynamic_lookup
 libmachook_INSTALL_PATH = /usr/macOS/lib

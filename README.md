@@ -27,8 +27,10 @@ TODO: make a script
 - Load macOS trustcaches using `loadtc /path/to/trustcache`
 
 ## Starting up
-- `launchctl unload /System/Library/LaunchDaemons/com.apple.{SpringBoard,backboardd}.plist`
-- `launchctl load /var/jb/usr/macOS/LaunchDaemons`
+```
+launchctl unload /System/Library/LaunchDaemons/com.apple.{SpringBoard,backboardd}.plist
+launchctl load /var/jb/usr/macOS/LaunchDaemons
+```
 
 ## Additional patches
 > [!NOTE]
@@ -47,7 +49,7 @@ TODO: make a script
 #### loginwindowLite
 - [ ] `Error (non-fatal) enumerating <private>: Error Domain=NSCocoaErrorDomain Code=256 "The file “Library” couldn’t be opened." UserInfo={NSURL=Library/ -- file:///System/Library/CoreServices/CoreTypes.bundle/Contents/, NSFilePath=/System/Library/CoreServices/CoreTypes.bundle/Contents/Library, NSUnderlyingError=0x13d5a73b0 {Error Domain=NSPOSIXErrorDomain Code=20 "Not a directory"}}`: because `/System/Volumes/Data/System/Library/CoreServices/CoreTypes.bundle/Contents/Library` might be missing.
 
-#### MTLSimDriver
+#### MTLSimDriver (non-native driver)
 - [x] `failed assertion _limits.maxColorAttachments > 0 at line 3791 in -[_MTLDevice initLimits]`, can be bypassed using `CFPreferencesSetAppValue(@"EnableSimApple5", @1, @"com.apple.Metal")`
 - [x] `-[MTLTextureDescriptorInternal validateWithDevice:], line 1344: error 'Texture Descriptor Validation invalid storageMode (1). Must be one of MTLStorageModeShared(0) MTLStorageModeMemoryless(3) MTLStorageModePrivate(2)`: because macOS defaults to `MTLStorageModeManaged`, while iOS always has unified memory so it doesn't allow that.
 - [x] `Attempt to pass a malloc(3)ed region to xpc_shmem_create().`: while regular drivers accept passing `malloc`ed region to `newBufferWithBytesNoCopy:length:options:deallocator:`, doing so to simulator is not allowed since XPC has to share the memory with `MTLSimDriverHost.xpc` process. Workaround is to create a mirrored region using `vm_remap` that can be shared across processes.
@@ -55,6 +57,9 @@ TODO: make a script
 - [x] `-[MTLSimDevice newRenderPipelineStateWithTileDescriptor:options:reflection:error:], line 2124: error 'not supported in the simulator'`. FIXME: this is not implemented at all. However, it is only used by `QuartzCore'CA::OGL::BlurState::tile_downsample(int)` which is skipped by the hook.
 - [x] `-[MTLSimTexture initWithDescriptor:decompressedPixelFormat:iosurface:plane:textureRef:heap:device:]:813: failed assertion 'IOSurface backed XR10 textures are not supported in the simulator'`: patch out the check, since it actually works fine.
 - [x] `-[MTLSimBuffer newTextureWithDescriptor:offset:bytesPerRow:]`: patch `storageMode == private` check.
+
+#### MTLCompilerService (native driver)
+- [ ] Wrapper binary to use macOS's native MTLCompilerService
 
 #### WindowServer
 - [x] It hangs twice when calling `NXClickTime` and `NXGetClickSpace`. Hooked to do nothing instead since both were deprecated.
@@ -73,3 +78,6 @@ TODO: make a script
 ## Credits
 - [zhuowei/iOS-run-macOS-executables-tools](https://github.com/zhuowei/iOS-run-macOS-executables-tools)
 - [SongXiaoXi/Reductant](https://github.com/SongXiaoXi/Reductant)
+
+## Other notes
+- `AGXMetalG17P` (A18) could use `AGXMetalG16G_B0` (M4) driver.

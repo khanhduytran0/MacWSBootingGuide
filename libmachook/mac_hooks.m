@@ -22,7 +22,9 @@ void EnableJIT(void);
 // IOMobileFramebuffer`kern_SwapEnd + 36
 #define OFF_IOMobileFramebuffer_kern_SwapEnd_inputStructCnt 0x4400 + 0x24
 // SkyLight`WS::Displays::CAWSManager::CAWSManager() + 560
+#if FORCE_COEXIST_BACKBOARDD
 #define OFF_SkyLight_CAWSManager_register_abort 0x18013c
+#endif
 #if FORCE_SW_RENDER
 // SkyLight`WSSystemCanCompositeWithMetal::once
 #define OFF_SkyLight_WSSystemCanCompositeWithMetal 0x1d72b148
@@ -37,6 +39,7 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
     Dl_info info;
     dladdr(header, &info);
     if(!strncmp(info.dli_fname, SkyLightPath, strlen(SkyLightPath))) {
+#if FORCE_COEXIST_BACKBOARDD
         // allow coexist with backboardd in WS::Displays::CAWSManager::CAWSManager() + 560
         // if backboardd is running, WindowServer switches to offscreen rendering
         uint32_t *check = (uint32_t *)(OFF_SkyLight_CAWSManager_register_abort + (uintptr_t)header);
@@ -45,6 +48,7 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
             assert(*check == 0xb4000588); // cbz    x8, do_abort
             *check = 0xd503201f; // nop
         });
+#endif
         
         // grant all permissions
         MSHookFunction(MSFindSymbol((MSImageRef)header, "_audit_token_check_tcc_access"), hooked_return_1, NULL);
@@ -59,20 +63,28 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
         // patch kern_SwapEnd passing correct inputStructCnt
         uint32_t *swapEnd = (uint32_t *)(OFF_IOMobileFramebuffer_kern_SwapEnd_inputStructCnt + (uintptr_t)header);
         ModifyExecutableRegion(swapEnd, sizeof(uint32_t), ^{
-            assert(*swapEnd == 0x52808d03); // mov    w3, #0x468
-            *swapEnd = 0x52808d83; // mov    w3, #0x46c
+            if (*swapEnd == 0x52808d03) { // mov    w3, #0x468
+                *swapEnd = 0x52808d83; // mov    w3, #0x46c
+            } else {
+                printf("kern_SwapEnd: can't find matching inst\n");
+            }
         });
     } else if(!strncmp(info.dli_fname, libxpcPath, strlen(libxpcPath))) {
         // register MTLCompilerService.xpc
-        xpc_object_t dict = (xpc_object_t)xpc_dictionary_create(NULL, NULL, 0);
-        xpc_dictionary_set_uint64(dict, "/System/Library/Frameworks/Metal.framework/Metal", 2);
-        void(*_xpc_bootstrap_services)(xpc_object_t) = MSFindSymbol((MSImageRef)header, "__xpc_bootstrap_services");
-        _xpc_bootstrap_services(dict);
+//        xpc_object_t dict = (xpc_object_t)xpc_dictionary_create(NULL, NULL, 0);
+//        xpc_dictionary_set_uint64(dict, "/System/Library/Frameworks/Metal.framework/Metal", 2);
+//        void(*_xpc_bootstrap_services)(xpc_object_t) = MSFindSymbol((MSImageRef)header, "__xpc_bootstrap_services");
+//        _xpc_bootstrap_services(dict);
+        xpc_add_bundle( "/var/jb/usr/macOS/rootfs/var/jb/XPCServices/MTLCompilerService.xpc", 2);
     }
 }
 
 __attribute__((constructor)) void InitStuff() {
     EnableJIT();
+    void *ff = dlopen("/var/jb/basebin/forkfix.dylib", RTLD_GLOBAL);
+    if(!ff) {
+        fprintf(stderr, "Failed to load forkfix.dylib: %s\n", dlerror());
+    }
     _dyld_register_func_for_add_image((void (*)(const struct mach_header *, intptr_t))loadImageCallback);
 }
 

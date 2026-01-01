@@ -16,7 +16,7 @@
 		<string>/var/jb/usr/macOS/bin/launchdchrootexec</string>
 		<string>0</string>
 		<string>0</string>
-		<string>/var/mnt/rootfs_macOS</string>
+		<string>/var/jb/usr/macOS/rootfs</string>
 		<string>/System/Library/CoreServices/launchservicesd</string>
 	</array>
 	<key>RunAtLoad</key>

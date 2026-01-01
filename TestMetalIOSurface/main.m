@@ -8,7 +8,7 @@
 #import "IOMobileFramebuffer.h"
 
 #define kUTTypePNG CFSTR("public.png")
-#define USE_HW_FORMAT 1
+#define USE_HW_FORMAT 0
 
 BOOL CGImageWriteToFile(CGImageRef image, NSString *path) {
     CFURLRef url = (__bridge CFURLRef)[NSURL fileURLWithPath:path];
@@ -118,7 +118,7 @@ fragment float4 fragment_main(VertexOut in [[stage_in]]) { \n \
     size_t totalBytes = size + 0x20000;
     NSDictionary *surfaceProps = @{
         //@"IOSurfaceAllocSize": @(totalBytes),
-        @"IOSurfaceCacheMode": @1024,
+        @"IOSurfaceCacheMode": @0x700, // 1024: older, 0x700: 18.0+?
         @"IOSurfaceWidth": @(width),
         @"IOSurfaceHeight": @(height),
         @"IOSurfaceMapCacheAttribute": @0,
@@ -201,11 +201,67 @@ fragment float4 fragment_main(VertexOut in [[stage_in]]) { \n \
     IOMobileFramebufferSwapBegin(fbConn, &token);
     IOMobileFramebufferSwapSetLayer(fbConn, 0, _surface, frame, frame, 0);
     IOMobileFramebufferSwapEnd(fbConn);
+    
+    [self saveTexture:_surfaceTexture];
+}
+
+- (void)saveTexture:(id<MTLTexture>)texture {
+    NSUInteger width = texture.width;
+    NSUInteger height = texture.height;
+    NSUInteger bytesPerPixel = 8;
+    NSUInteger bytesPerRow = bytesPerPixel * width;
+
+    void *rawData = malloc(height * bytesPerRow);
+    MTLRegion region = {
+        {0, 0, 0},
+        {width, height, 1}
+    };
+
+    [texture getBytes:rawData
+          bytesPerRow:bytesPerRow
+           fromRegion:region
+          mipmapLevel:0];
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(rawData, width, height, 8, bytesPerRow,
+                                                 colorSpace, kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
+
+    CGImageRef imageRef = CGBitmapContextCreateImage(context);
+    CGImageWriteToFile(imageRef, @"/tmp/output.png");
+
+    CGImageRelease(imageRef);
+    CGContextRelease(context);
+    CGColorSpaceRelease(colorSpace);
+
+    free(rawData);
+    NSLog(@"✅ Texture saved to output.png");
 }
 
 @end
 
+void xpc_connection_set_instance(xpc_connection_t connection, const uuid_t uuid);
+void testCompiler() {
+    uuid_t uuid;
+    uuid_generate(uuid);
+    xpc_connection_t connection = xpc_connection_create("com.apple.MTLCompilerService", 0);
+    xpc_connection_set_instance(connection, uuid);
+    xpc_connection_set_event_handler(connection, ^(xpc_object_t object) {
+        NSLog(@"Process received event: %@", [object description]);
+    });
+    xpc_connection_resume(connection);
+
+    xpc_object_t dict = xpc_dictionary_create(NULL, NULL, 0);
+    xpc_dictionary_set_uint64(dict, "requestType", 9); // XPCCompilerConnection::checkConnectionActive(bool&)
+    xpc_object_t object = xpc_connection_send_message_with_reply_sync(connection, dict);
+    NSLog(@"Received synced event: %@", [object description]);
+    NSLog(@"XPC connection now: %@", [connection description]);
+    sleep(1);
+    xpc_connection_cancel(connection);
+}
+
 int main(int argc, const char * argv[]) {
+    testCompiler();
+    
     @autoreleasepool {
         MetalRenderer *renderer = [[MetalRenderer alloc] init];
         [renderer renderToIOSurface];

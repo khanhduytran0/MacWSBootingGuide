@@ -153,9 +153,9 @@ static id(*MTLCreateSimulatorDevice)(void);
 @end
 %hookf(Class, getMetalPluginClassForService, int service) {
 #ifdef FORCE_M1_DRIVER
-    NSBundle *bundle = [NSBundle bundleWithPath:@"/System/Library/Extensions/AGXMetal13_3.bundle"];
+    NSBundle *bundle = [NSBundle bundleWithPath:@"/System/Library/Extensions/AGXMetalG16G_B0.bundle"];
     [bundle load];
-    return %c(AGXG13GDevice);
+    return %c(AGXG16GDevice);
 #else
     return MTLFakeDevice.class;
 #endif
@@ -190,17 +190,21 @@ extern int xpc_connection_enable_sim2host_4sim();
 }
 
 __attribute__((constructor)) static void InitMetalHooks() {
+#ifndef FORCE_M1_DRIVER
     dispatch_async(dispatch_get_main_queue(), ^{
         // force Apple 5 profile
         CFPreferencesSetAppValue((const CFStringRef)@"EnableSimApple5", (__bridge CFPropertyListRef)@(YES), (const CFStringRef)@"com.apple.Metal");
     });
+#endif
     
     MSImageRef sys = MSGetImageByName("/System/Library/Frameworks/Metal.framework/Metal");
     %init(getMetalPluginClassForService = MSFindSymbol(sys, "_getMetalPluginClassForService"));
     
     MSImageRef xpc = MSGetImageByName("/usr/lib/system/libxpc.dylib");
     MSHookFunction(MSFindSymbol(xpc, "_xpc_connection_create_mach_service"), hooked_xpc_connection_create_mach_service, (void *)&orig_xpc_connection_create_mach_service);
+#ifndef FORCE_M1_DRIVER
     // register MTLSimDriverHost.xpc
     char *frameworkPath = JBROOT_PATH("/usr/macOS/Frameworks/MTLSimDriver.framework/XPCServices/MTLSimDriverHost.xpc");
     xpc_add_bundle(frameworkPath, 2);
+#endif
 }

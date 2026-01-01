@@ -4,7 +4,7 @@ ARCHS = arm64
 include $(THEOS)/makefiles/common.mk
 
 # iOS subprojects
-SUBPROJECTS += MTLCompilerBypassOSCheck MTLSimDriverHost launchdchrootexec loadtc
+SUBPROJECTS += MTLCompilerBypassOSCheck MTLSimDriverHost launchdchrootexec loadtc launchservicesd2dylib
 # macOS subprojects
 SUBPROJECTS += launchservicesd libmachook login TestMetalIOSurface
 

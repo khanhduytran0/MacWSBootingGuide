@@ -1,5 +1,6 @@
 @import CydiaSubstrate;
 @import Darwin;
+#import <assert.h>
 
 void ModifyExecutableRegion(void *addr, size_t size, void(^callback)(void)) {
     vm_protect(mach_task_self(), (vm_address_t)addr, size, false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
@@ -17,12 +18,10 @@ void ModifyExecutableRegion(void *addr, size_t size, void(^callback)(void)) {
     // 0x1eaaa17c4 <+608>:  ldr    w8, [sp, #0x84]
     // 0x1eaaa17c8 <+612>:  cmp    w8, #0x7
     // 0x1eaaa17cc <+616>:  b.ne   0x1eaaa1840 (throws "Target OS is incompatible.")
-    while(symbol[0] != 0xb94087e8) {
+    while(symbol[0] != 0x71001d1f) {
         symbol++;
     }
-    assert(symbol[1] == 0x71001d1f);
-    //assert(symbol[2] == 0x540003a1);
-    ModifyExecutableRegion(symbol + 2, sizeof(uint32_t), ^{
-        symbol[2] = 0xd503201f; // nop
+    ModifyExecutableRegion(symbol, sizeof(uint32_t), ^{
+        symbol[0] = 0x6b08011f; // cmp w8, w8
     });
 }

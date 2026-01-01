@@ -4,46 +4,18 @@
 int posix_spawnattr_set_launch_type_np(posix_spawnattr_t *attr, int launch_type);
 
 int main(int argc, char *argv[], char *envp[]) {
-    if(strstr(argv[0], "MTLCompilerService") == NULL) {
-        // TODO: unhardcode path
-        argv = {argv[0], "0", "0", "/var/jb/usr/macOS/rootfs", "/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService", NULL};
-        return main(argc, argv, envp);
-    }
+    int uid = 0;
+    int gid = 0;
+    char *execArgs[] = {"/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService", NULL};
+    const char *execPath = *execArgs;
     
-    if(argc < 5) {
-        fprintf(stderr, "Usage: %s uid gid /path/to/root /path/to/exec args\n", argv[0]);
-        return 1;
-    }
-    int uid = atoi(argv[1]);
-    int gid = atoi(argv[2]);
-    const char *rootPath = argv[3];
-    const char *execPath = argv[4];
-    char **execArgs = &argv[4];
-    
-    char currentPath[PATH_MAX];
-    if(getcwd(currentPath, sizeof(currentPath)) == NULL) {
-        perror("getcwd");
-        return 1;
-    }
-    
-    if(chroot(rootPath) < 0) {
+    if(chroot("/var/jb/usr/macOS/rootfs") < 0) {
         perror("chroot");
         return 1;
     }
-    
-    if(chdir(currentPath) < 0) {
+    if(chdir("/") < 0) {
         perror("chdir");
         chdir("/");
-    }
-    
-    if(setgid(gid) < 0) {
-        perror("setgid");
-        return 1;
-    }
-    
-    if(setuid(uid) < 0) {
-        perror("setuid");
-        return 1;
     }
     
     setenv("DYLD_INSERT_LIBRARIES", "/usr/local/lib/libmachook.dylib", 1);
