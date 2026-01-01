@@ -4,11 +4,10 @@
 int posix_spawnattr_set_launch_type_np(posix_spawnattr_t *attr, int launch_type);
 
 int main(int argc, char *argv[], char *envp[]) {
-    if(strstr(argv[0], "MTLCompilerService") == NULL) {
+    if(strstr(argv[0], "MTLCompilerService") != NULL) {
         // TODO: unhardcode path
-        argv = {argv[0], "0", "0", "/var/jb/usr/macOS/rootfs", "/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService", NULL};
-        return main(argc, argv, envp);
-    }
+        char *newArgv[] = {argv[0], "0", "0", "/var/jb/usr/macOS/rootfs", "/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService", NULL};
+         return main(sizeof(newArgv) / sizeof(newArgv[0]), newArgv, envp);    }
     
     if(argc < 5) {
         fprintf(stderr, "Usage: %s uid gid /path/to/root /path/to/exec args\n", argv[0]);

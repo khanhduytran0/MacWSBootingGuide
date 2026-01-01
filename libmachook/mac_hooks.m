@@ -65,8 +65,6 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
         ModifyExecutableRegion(swapEnd, sizeof(uint32_t), ^{
             if (*swapEnd == 0x52808d03) { // mov    w3, #0x468
                 *swapEnd = 0x52808d83; // mov    w3, #0x46c
-            } else {
-                printf("kern_SwapEnd: can't find matching inst\n");
             }
         });
     } else if(!strncmp(info.dli_fname, libxpcPath, strlen(libxpcPath))) {
