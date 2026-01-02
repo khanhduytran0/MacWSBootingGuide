@@ -139,8 +139,8 @@
 	<true/>
 	<key>com.apple.private.dfr.brightness-access</key>
 	<true/>
-    <key>com.apple.private.domain-extension</key>
-    <true/>
+	<key>com.apple.private.domain-extension</key>
+	<true/>
 	<key>com.apple.private.gain-map-access</key>
 	<true/>
 	<key>com.apple.private.gpuwrangler</key>

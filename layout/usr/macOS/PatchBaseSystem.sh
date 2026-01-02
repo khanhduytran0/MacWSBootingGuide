@@ -3,6 +3,7 @@
 
 cmd_sign="codesign --force --preserve-metadata=entitlements,identifier --sign -"
 cd /var/jb/usr/macOS
+plutil -convert xml1 entitlements*.plist
 
 echo "copy rootfs/System/Library/Templates/Data to rootfs/System/Volumes/Data"
 cp -R rootfs/System/Library/Templates/Data rootfs/System/Volumes/
@@ -25,7 +26,7 @@ cp bin/launchdchrootexec rootfs/var/jb/XPCServices/MTLCompilerService.xpc/MTLCom
 echo "patch MTLCompilerService"
 ./bin/machotool arm64 rootfs/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
 # clear entitlements from MTLCompilerService
-codesign --force --preserve-metadata=identifier --sign - rootfs/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
+codesign --force --preserve-metadata=identifier --entitlements entitlements_MTLCompilerService.plist --sign - rootfs/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService
 
 echo "patch launchservicesd"
 mv rootfs/System/Library/CoreServices/launchservicesd{,.dylib}
