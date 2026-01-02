@@ -79,14 +79,18 @@ void loadImageCallback(const struct mach_header* header, intptr_t vmaddr_slide) 
 
 __attribute__((constructor)) void InitStuff() {
     EnableJIT();
-    void *ff = dlopen("/var/jb/basebin/forkfix.dylib", RTLD_GLOBAL);
-    if(!ff) {
-        fprintf(stderr, "Failed to load forkfix.dylib: %s\n", dlerror());
-    }
     _dyld_register_func_for_add_image((void (*)(const struct mach_header *, intptr_t))loadImageCallback);
 }
 
-extern int gpu_bundle_find_trusted(const char *name, char *trusted_path, size_t trusted_path_len);
+int qtn_proc_init_with_pid(void *handle, int pid);
+int qtn_proc_init_with_pid_new(void *handle, int pid) {
+    return 0;
+}
+
+int _qtn_proc_apply_to_self(void *handle);
+int _qtn_proc_apply_to_self_new(void *handle) {
+    return 0;
+}
 
 int sysctlbyname_new(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     //printf("Calling interposed sysctlbyname\n");
@@ -255,6 +259,8 @@ IOSurfaceRef IOSurfaceCreate_new(NSMutableDictionary *properties) {
     return result;
 }
 
+DYLD_INTERPOSE(qtn_proc_init_with_pid_new, qtn_proc_init_with_pid);
+DYLD_INTERPOSE(_qtn_proc_apply_to_self_new, _qtn_proc_apply_to_self);
 DYLD_INTERPOSE(sysctlbyname_new, sysctlbyname);
 DYLD_INTERPOSE(sandbox_init_with_parameters_new, sandbox_init_with_parameters);
 DYLD_INTERPOSE(mach_port_construct_new, mach_port_construct);

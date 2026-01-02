@@ -1,11 +1,11 @@
-TARGET := iphone:clang:latest:14.0
+TARGET := macosx:clang:latest:14.0
 ARCHS = arm64
 include $(THEOS)/makefiles/common.mk
 
 TOOL_NAME = TestMetalIOSurface
 
 TestMetalIOSurface_FILES = main.m
-#exec_CFLAGS = -fobjc-arc
+TestMetalIOSurface_CFLAGS = -fobjc-arc
 TestMetalIOSurface_CODESIGN_FLAGS = -S../entitlements.plist
 TestMetalIOSurface_INSTALL_PATH = /usr/macOS/bin
 TestMetalIOSurface_LDFLAGS = -F../Frameworks

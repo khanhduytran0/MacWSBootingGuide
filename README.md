@@ -6,8 +6,8 @@ Some paths are currently hardcoded for rootless jailbreak, but you can change th
 You need these from simulator runtime: MTLSimDriver.framework, MTLSimImplementation.framework, MetalSerializer.framework
 
 ## Setting up (macOS Base System aka recoveryOS)
-- TODO
-- Copy `/System/Volumes/Data/System/Library/CoreServices/CoreTypes.bundle/Contents/Library`
+- Extract BaseSystem to `/var/jb/usr/macOS/rootfs`
+- Run script `bash /var/jb/usr/macOS/PatchBaseSystem.sh`
 
 ## Setting up (macOS full installation)
 TODO: make a script
@@ -16,7 +16,6 @@ TODO: make a script
 - Extract OS cryptex dmg to `rootfs/System/Volumes/Preboot/Cryptexes/OS`
 - Copy-merge folders from `rootfs/System/Library/Templates/Data` to your `rootfs`
 - Symlink `rootfs/System/Volumes/Data` -> `../..`
-- Symlink `rootfs/var/folders/zz` -> `/var/folders/zz`
 - mkdir `rootfs/Users/root`
 - ~~Bind mount `rootfs/var/jb` -> `/var/jb`. Use [my fork of mount-bindfs-dopamine](https://github.com/khanhduytran0/mount-bindfs-dopamine) (available in Nathan's repo)~~ Copy libmachook and forkfix
 - Patch `dyld`, `launchservicesd` and `WindowServer` as described below.

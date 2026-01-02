@@ -40,7 +40,7 @@ int _main(int argc, char *argv[], char *envp[]) {
         return 1;
     }
     
-    setenv("DYLD_INSERT_LIBRARIES", "/usr/local/lib/libmachook.dylib", 1);
+    setenv("DYLD_INSERT_LIBRARIES", "/var/jb/usr/lib/libmachook.dylib", 1);
     setenv("HOME", "/Users/root", 1);
     setenv("TMPDIR", "/tmp", 1);
     
@@ -72,7 +72,7 @@ int _main(int argc, char *argv[], char *envp[]) {
 int main(int argc, char *argv[], char *envp[]) {
     if(strstr(argv[0], "MTLCompilerService") != NULL) {
         char *newArgv[] = {argv[0], "0", "0", "/var/jb/usr/macOS/rootfs", "/System/Library/Frameworks/Metal.framework/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService", NULL};
-        return _main(sizeof(newArgv) / sizeof(newArgv[0]), newArgv, envp);
+        return _main(sizeof(newArgv) / sizeof(newArgv[0]) - 1, newArgv, envp);
     }
     return _main(argc, argv, envp);
 }

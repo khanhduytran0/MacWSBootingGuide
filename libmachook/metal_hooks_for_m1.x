@@ -11,6 +11,18 @@
 // Metal`MTLInputStageReflectionReader::deserialize + 956
 #define OFF_Metal_MTLInputStageReflectionReader_deserialize_extra 0x90678 + 0x3bc
 
+#if DEBUG
+#define DebugCall(expr) do { \
+    kern_return_t kr = (expr); \
+    if(kr != KERN_SUCCESS) { \
+        NSLog(@"DebugCall: " #expr " failed: %d (%s)\n%@", kr, mach_error_string(kr), NSThread.callStackSymbols); \
+    } \
+    return kr; \
+} while(0)
+#else
+#define DebugCall(expr) return expr;
+#endif
+
 // IOKit
 io_connect_t iogpuClients[10];
 int iogpuClientsCount = 0;
@@ -62,14 +74,38 @@ static uint32_t IOConnectTranslateSelector(io_connect_t client, uint32_t selecto
                 return 0xf;
             case 0x12: // ioGPUNotificationQueueFinalize
                 return 0x10;
+            case 0x18: // -[IOGPUMTLEvent initWithDeviceRef:options:]
+                return 0x14;
+            case 0x19: // -[IOGPUMTLEvent dealloc]
+                return 0x15;
             case 0x1d: // IOGPUCommandQueueCreateWithQoS + 516
                 return 0x19;
             case 0x1e: // IOGPUCommandQueueSubmitCommandBuffers
                 return 0x1a;
             case 0x1f: // IOGPUCommandQueueSetPriorityAndBackground
                 return 0x1b;
+            case 0x25: // IOGPUDeviceSetDisplayParams (doesn't exist on iOS)
+                return 0x21;
             case 0x2a: // IOGPUDeviceCreateVNIODesc
                 return 0x26;
+        }
+        
+        // DEBUG ZONE
+        switch(selector) {
+            case 0x10f: // need checking
+            case 0x108:
+            case 0x107:
+            case 0x105:
+            case 0x102:
+            case 0x100:
+            case 0x20:
+            case 0x2:
+            case 0x0:
+                break;
+            default:
+                printf("FIXME: Unchecked IOGPU selector translation: 0x%x -> ???\n", selector);
+                NSLog(@"%@", NSThread.callStackSymbols);
+                break;
         }
     }
     return selector;
@@ -77,27 +113,27 @@ static uint32_t IOConnectTranslateSelector(io_connect_t client, uint32_t selecto
 
 IOReturn IOConnectCallMethod_new(io_connect_t client, uint32_t selector, const uint64_t *in, uint32_t inCnt, const void *inStruct, size_t inStructCnt, uint64_t *out, uint32_t *outCnt, void *outStruct, size_t *outStructCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallMethod(client, selector, in, inCnt, inStruct, inStructCnt, out, outCnt, outStruct, outStructCnt);
+    DebugCall(IOConnectCallMethod(client, selector, in, inCnt, inStruct, inStructCnt, out, outCnt, outStruct, outStructCnt));
 }
 IOReturn IOConnectCallScalarMethod_new(io_connect_t client, uint32_t selector, const uint64_t *in, uint32_t inCnt, uint64_t *out, uint32_t *outCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallScalarMethod(client, selector, in, inCnt, out, outCnt);
+    DebugCall(IOConnectCallScalarMethod(client, selector, in, inCnt, out, outCnt));
 }
 IOReturn IOConnectCallStructMethod_new(io_connect_t client, uint32_t selector, const void *inStruct, size_t inStructCnt, void *outStruct, size_t *outStructCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallStructMethod(client, selector, inStruct, inStructCnt, outStruct, outStructCnt);
+    DebugCall(IOConnectCallStructMethod(client, selector, inStruct, inStructCnt, outStruct, outStructCnt));
 }
 IOReturn IOConnectCallAsyncMethod_new(io_connect_t client, uint32_t selector, mach_port_t wake_port, uint64_t *ref, uint32_t refCnt, const uint64_t *in, uint32_t inCnt, const void *inStruct, size_t inStructCnt, uint64_t *out, uint32_t *outCnt, void *outStruct, size_t *outStructCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallAsyncMethod(client, selector, wake_port, ref, refCnt, in, inCnt, inStruct, inStructCnt, out, outCnt, outStruct, outStructCnt);
+    DebugCall(IOConnectCallAsyncMethod(client, selector, wake_port, ref, refCnt, in, inCnt, inStruct, inStructCnt, out, outCnt, outStruct, outStructCnt));
 }
 IOReturn IOConnectCallAsyncScalarMethod_new(io_connect_t client, uint32_t selector, mach_port_t wake_port, uint64_t *ref, uint32_t refCnt, const uint64_t *in, uint32_t inCnt, uint64_t *out, uint32_t *outCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallAsyncScalarMethod(client, selector, wake_port, ref, refCnt, in, inCnt, out, outCnt);
+    DebugCall(IOConnectCallAsyncScalarMethod(client, selector, wake_port, ref, refCnt, in, inCnt, out, outCnt));
 }
 IOReturn IOConnectCallAsyncStructMethod_new(io_connect_t client, uint32_t selector, mach_port_t wake_port, uint64_t *ref, uint32_t refCnt, const void *inStruct, size_t inStructCnt, void *outStruct, size_t *outStructCnt) {
     selector = IOConnectTranslateSelector(client, selector);
-    __attribute__((musttail)) return IOConnectCallAsyncStructMethod(client, selector, wake_port, ref, refCnt, inStruct, inStructCnt, outStruct, outStructCnt);
+    DebugCall(IOConnectCallAsyncStructMethod(client, selector, wake_port, ref, refCnt, inStruct, inStructCnt, outStruct, outStructCnt));
 }
 DYLD_INTERPOSE(IOConnectCallMethod_new, IOConnectCallMethod);
 DYLD_INTERPOSE(IOConnectCallScalarMethod_new, IOConnectCallScalarMethod);
@@ -109,7 +145,7 @@ DYLD_INTERPOSE(IOConnectCallAsyncStructMethod_new, IOConnectCallAsyncStructMetho
 kern_return_t IOServiceOpen_new(io_service_t service, task_port_t owningTask, uint32_t type, io_connect_t *connect) {
     static io_service_t agxService;
     if(!agxService) {
-        agxService = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOAcceleratorES"));
+        agxService = IOServiceGetMatchingService(0 /*kIOMasterPortDefault*/, IOServiceMatching("IOAcceleratorES"));
         assert(agxService != IO_OBJECT_NULL);
     }
     

@@ -3,6 +3,7 @@
 @import Foundation;
 @import Metal;
 #import <rootless.h>
+#import "interpose.h"
 #import "utils.h"
 
 void swizzle2(Class class, SEL originalAction, Class class2, SEL swizzledAction) {
@@ -27,6 +28,7 @@ void swizzle2(Class class, SEL originalAction, Class class2, SEL swizzledAction)
 }
 @end
 
+#ifndef FORCE_M1_DRIVER
 static id(*MTLCreateSimulatorDevice)(void);
 @interface MTLFakeDevice : _MTLDevice
 @end
@@ -151,11 +153,20 @@ static id(*MTLCreateSimulatorDevice)(void);
     return [self hooked_newBufferWithLength:length options:options pointer:pointer copyBytes:copyBytes deallocator:deallocator];
 }
 @end
+#endif
 %hookf(Class, getMetalPluginClassForService, int service) {
 #ifdef FORCE_M1_DRIVER
-    NSBundle *bundle = [NSBundle bundleWithPath:@"/System/Library/Extensions/AGXMetalG16G_B0.bundle"];
+    setenv("ALT_MTL_BUNDLE_PATH", "/System/Library/Extensions/AGXMetalG16G_B0.bundle", 0);
+    setenv("ALT_MTL_CLASS_NAME", "AGXG16GDevice", 0);
+    //setenv("ALT_MTL_BUNDLE_PATH", "/System/Library/Extensions/AGXMetalG15G_B0.bundle", 0);
+    //setenv("ALT_MTL_CLASS_NAME", "AGXG15GDevice", 0);
+    NSString *defaultPath = @(getenv("ALT_MTL_BUNDLE_PATH"));
+    NSString *defaultClassName = @(getenv("ALT_MTL_CLASS_NAME"));
+    NSBundle *bundle = [NSBundle bundleWithPath:defaultPath];
     [bundle load];
-    return %c(AGXG16GDevice);
+    Class principalClass = NSClassFromString(defaultClassName);
+    assert(principalClass);
+    return principalClass;
 #else
     return MTLFakeDevice.class;
 #endif
@@ -178,16 +189,24 @@ const char *metalSimService = "com.apple.metal.simulator";
 xpc_connection_t (*orig_xpc_connection_create_mach_service)(const char * name, dispatch_queue_t targetq, uint64_t flags);
 xpc_connection_t hooked_xpc_connection_create_mach_service(const char * name, dispatch_queue_t targetq, uint64_t flags) {
     flags &= ~XPC_CONNECTION_MACH_SERVICE_PRIVILEGED;
+#ifndef FORCE_M1_DRIVER
     if(!strncmp(name, metalSimService, strlen(metalSimService))) {
         return xpc_connection_create(metalSimService, 0);
     }
     return orig_xpc_connection_create_mach_service(name, targetq, flags);
+#else
+    return xpc_connection_create_mach_service(name, targetq, flags);
+#endif
 }
 
-extern int xpc_connection_enable_sim2host_4sim();
-%hookf(int, xpc_connection_enable_sim2host_4sim) {
-    return 0;
-}
+#ifndef FORCE_M1_DRIVER
+//extern int xpc_connection_enable_sim2host_4sim();
+//%hookf(int, xpc_connection_enable_sim2host_4sim) {
+//    return 0;
+//}
+#else
+DYLD_INTERPOSE(hooked_xpc_connection_create_mach_service, xpc_connection_create_mach_service);
+#endif
 
 __attribute__((constructor)) static void InitMetalHooks() {
 #ifndef FORCE_M1_DRIVER
@@ -200,9 +219,9 @@ __attribute__((constructor)) static void InitMetalHooks() {
     MSImageRef sys = MSGetImageByName("/System/Library/Frameworks/Metal.framework/Metal");
     %init(getMetalPluginClassForService = MSFindSymbol(sys, "_getMetalPluginClassForService"));
     
+#ifndef FORCE_M1_DRIVER
     MSImageRef xpc = MSGetImageByName("/usr/lib/system/libxpc.dylib");
     MSHookFunction(MSFindSymbol(xpc, "_xpc_connection_create_mach_service"), hooked_xpc_connection_create_mach_service, (void *)&orig_xpc_connection_create_mach_service);
-#ifndef FORCE_M1_DRIVER
     // register MTLSimDriverHost.xpc
     char *frameworkPath = JBROOT_PATH("/usr/macOS/Frameworks/MTLSimDriver.framework/XPCServices/MTLSimDriverHost.xpc");
     xpc_add_bundle(frameworkPath, 2);

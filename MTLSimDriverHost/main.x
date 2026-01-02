@@ -1,6 +1,7 @@
 @import Darwin;
 @import Foundation;
 @import Metal;
+#include "xpc.h"
 #include <rootless.h>
 
 @interface MTLTextureDescriptorInternal : MTLTextureDescriptor

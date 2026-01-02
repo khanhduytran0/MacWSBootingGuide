@@ -18,7 +18,7 @@ int main(int argc, char *argv[], char *envp[]) {
         chdir("/");
     }
     
-    setenv("DYLD_INSERT_LIBRARIES", "/usr/local/lib/libmachook.dylib", 1);
+    setenv("DYLD_INSERT_LIBRARIES", "/var/jb/usr/lib/libmachook.dylib", 1);
     setenv("HOME", "/Users/root", 1);
     setenv("TMPDIR", "/tmp", 1);
     
