@@ -13,6 +13,7 @@ extern IOSurfaceRef IOSurfaceCreate(NSDictionary* properties);
 
 extern au_asid_t audit_token_to_asid(audit_token_t atoken);
 extern uid_t audit_token_to_auid(audit_token_t atoken);
+void xpc_add_bundle(char *, int);
 
 //#define FORCE_SW_RENDER 1
 BOOL hooked_return_1(void) { return YES; }
@@ -84,6 +85,10 @@ __attribute__((constructor)) void InitStuff() {
 
 int qtn_proc_init_with_pid(void *handle, int pid);
 int qtn_proc_init_with_pid_new(void *handle, int pid) {
+    return 0;
+}
+int _qtn_proc_init_with_self(void *handle);
+int _qtn_proc_init_with_self_new(void *handle) {
     return 0;
 }
 
@@ -260,6 +265,7 @@ IOSurfaceRef IOSurfaceCreate_new(NSMutableDictionary *properties) {
 }
 
 DYLD_INTERPOSE(qtn_proc_init_with_pid_new, qtn_proc_init_with_pid);
+DYLD_INTERPOSE(_qtn_proc_init_with_self_new, _qtn_proc_init_with_self);
 DYLD_INTERPOSE(_qtn_proc_apply_to_self_new, _qtn_proc_apply_to_self);
 DYLD_INTERPOSE(sysctlbyname_new, sysctlbyname);
 DYLD_INTERPOSE(sandbox_init_with_parameters_new, sandbox_init_with_parameters);

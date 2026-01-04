@@ -185,6 +185,13 @@ static id(*MTLCreateSimulatorDevice)(void);
 }
 %end
 
+
+// Make indirect symbol to bypass `is unavailable: not available on iOS`
+xpc_connection_t _xpc_connection_create_mach_service(const char * name, dispatch_queue_t targetq, uint64_t flags);
+__asm__(
+    ".globl __xpc_connection_create_mach_service\n"
+    "__xpc_connection_create_mach_service = _xpc_connection_create_mach_service");
+
 const char *metalSimService = "com.apple.metal.simulator";
 xpc_connection_t (*orig_xpc_connection_create_mach_service)(const char * name, dispatch_queue_t targetq, uint64_t flags);
 xpc_connection_t hooked_xpc_connection_create_mach_service(const char * name, dispatch_queue_t targetq, uint64_t flags) {
@@ -195,7 +202,7 @@ xpc_connection_t hooked_xpc_connection_create_mach_service(const char * name, di
     }
     return orig_xpc_connection_create_mach_service(name, targetq, flags);
 #else
-    return xpc_connection_create_mach_service(name, targetq, flags);
+    return _xpc_connection_create_mach_service(name, targetq, flags);
 #endif
 }
 
@@ -205,7 +212,7 @@ xpc_connection_t hooked_xpc_connection_create_mach_service(const char * name, di
 //    return 0;
 //}
 #else
-DYLD_INTERPOSE(hooked_xpc_connection_create_mach_service, xpc_connection_create_mach_service);
+DYLD_INTERPOSE(hooked_xpc_connection_create_mach_service, _xpc_connection_create_mach_service);
 #endif
 
 __attribute__((constructor)) static void InitMetalHooks() {
