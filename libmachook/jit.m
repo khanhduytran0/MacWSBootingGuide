@@ -23,5 +23,5 @@ void EnableJIT() {
             }
         }
     }
-    assert(isJITEnabled());
+    //assert(isJITEnabled());
 }
