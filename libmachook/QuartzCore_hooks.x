@@ -14,6 +14,7 @@ void NXGetClickSpace_new() {}
 DYLD_INTERPOSE(NXClickTime_new, NXClickTime)
 DYLD_INTERPOSE(NXGetClickSpace_new, NXGetClickSpace)
 
+#ifndef FORCE_M1_DRIVER
 int BlurState_tile_downsample() {
     return 0;
 }
@@ -24,5 +25,7 @@ __attribute__((constructor)) static void InitQuartzCoreHooks() {
     void *handle = dlopen(quartzCorePath, RTLD_GLOBAL);
     assert(handle);
     MSImageRef quartzCore = MSGetImageByName(quartzCorePath);
-    MSHookFunction(MSFindSymbol(quartzCore, "__ZN2CA3OGL9BlurState15tile_downsampleEi"), (void *)BlurState_tile_downsample, NULL);
+    void *symbol = MSFindSymbol(quartzCore, "__ZN2CA3OGL9BlurState15tile_downsampleEi");
+    if(symbol) MSHookFunction(symbol, (void *)BlurState_tile_downsample, NULL);
 }
+#endif
